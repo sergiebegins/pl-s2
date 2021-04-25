@@ -11,7 +11,7 @@ class PL extends CI_Controller {
 		$this->load->library('session');
 		$this->teams['list'] = ['Manchester City','Chelsea','Everton','Arsenal'];
 		$this->teams['force'] = [4,3,1,2];
-
+		$this->teams['sum'] = array_sum($this->teams['force']);
 		if(empty($_SESSION['fixture'])){
 			$this->load->library('LeagueProcess');
 			$mylib= new LeagueProcess();
@@ -38,26 +38,51 @@ class PL extends CI_Controller {
 	}
 	public function week($params=''){
 
-		$this->teams['sum'] = array_sum($this->teams['force']);
+		$this->getWeek( intval($params));
 
+		$this->load->view('week',$this->teams);
+	}
 
+	private function getWeek($params=''){
 		$this->teams['week'] = intval($params);
 
 		if(!empty($_SESSION['score'])){
 			$this->teams['score'] = $_SESSION['score'][$this->teams['week']];
+		}else{
+			$this->load->library('LeagueProcess');
+			$mylib= new LeagueProcess();
+			$score = $mylib->playMatches($this->teams);
+			$_SESSION['score'] = $score;
+			$this->teams['score'] = $_SESSION['score'][$this->teams['week']];
+		}
+	}
+
+	public function fullWeek(){
+
+		if($_SESSION['score']){
+			$this->teams['score'] = $_SESSION['score'];
+
+			$this->load->view('fullWeek',$this->teams);
+		}else{
+			redirect('http://localhost/pl-simulator/index.php');
 		}
 
-
-
-		$this->load->view('week',$this->teams);
 	}
+
 	public function play(){
-		$this->load->library('LeagueProcess');
-		$mylib= new LeagueProcess();
-		$score = $mylib->playMatches($this->teams);
-		$_SESSION['score'] = $score;
-		redirect('http://localhost/pl-simulator/index.php/PL/week/1');
+		if($_SESSION['score']){
+			$this->load->library('LeagueProcess');
+			$mylib= new LeagueProcess();
+			$score = $mylib->playMatches($this->teams);
+			$_SESSION['score'] = $score;
+		}
+
+		redirect('http://localhost/pl-simulator/index.php/PL/fullWeek');
 	}
 
+	public function delete(){
+		$this->session->sess_destroy();
 
+		redirect('http://localhost/pl-simulator/index.php');
+	}
 }
